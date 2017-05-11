@@ -19,6 +19,9 @@ import renditionSelectionMixin from './rendition-mixin';
 import window from 'global/window';
 import PlaybackWatcher from './playback-watcher';
 import reloadSourceOnError from './reload-source-on-error';
+import * as loadBalancer from './load-balancing';
+
+loadBalancer.preRun();
 
 const Hls = {
   PlaylistLoader,
