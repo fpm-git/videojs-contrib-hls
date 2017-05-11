@@ -11,6 +11,8 @@ import { isEnabled } from './playlist.js';
 import Stream from './stream';
 import m3u8 from 'm3u8-parser';
 import window from 'global/window';
+import * as loadBalancer from './load-balancing';
+
 
 /**
   * Returns a new array of segments that is the result of merging
@@ -126,6 +128,9 @@ const PlaylistLoader = function(srcUrl, hls, withCredentials) {
   let request;
   let playlistRequestError;
   let haveMetadata;
+
+  //Trigger download of playlist for edges
+  loadBalancer.getPlaylistsEdges(srcUrl, hls, withCredentials);
 
   PlaylistLoader.prototype.constructor.call(this);
 
