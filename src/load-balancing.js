@@ -8,7 +8,7 @@ import async from 'async';
 let hls_;
 const edgesApiUri = 'https://floatplane.tk/api/edges';
 const edgeQuery = '/manage/server_status';
-var EdgeServers = [];
+let EdgeServers = [];
 
 /**
  * Retrieve Edges from API
