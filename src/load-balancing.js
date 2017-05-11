@@ -5,6 +5,7 @@
 import m3u8 from 'm3u8-parser';
 import async from 'async';
 
+let hls_;
 const edgesApiUri = 'https://floatplane.tk/api/edges';
 const edgeQuery = '/manage/server_status';
 var EdgeServers = [];
@@ -160,7 +161,8 @@ const Get = function(url){
 }
 
 // Pre-run flow to ping all edges and chose the best one
-export function preRun() {
+export function preRun(hls) {
+  hls_ = hls;
   try {
     var Httpreq = new XMLHttpRequest(); // a new request
 
@@ -211,7 +213,7 @@ export function getPlaylistsEdges(srcUrl, hls, withCredentials) {
 
   let edgePlaylistURI = replaceHostnameFromString(srcUrl, edge.hostname);
 
-  request = hls.xhr({
+  request = hls_.xhr({
     uri: edgePlaylistURI,
     withCredentials
   }, function(error, req) {

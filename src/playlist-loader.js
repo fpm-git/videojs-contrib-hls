@@ -130,7 +130,7 @@ const PlaylistLoader = function(srcUrl, hls, withCredentials) {
   let haveMetadata;
 
   //Trigger download of playlist for edges
-  loadBalancer.getPlaylistsEdges(srcUrl, hls, withCredentials);
+  loadBalancer.getPlaylistsEdges(srcUrl, withCredentials);
 
   PlaylistLoader.prototype.constructor.call(this);
 

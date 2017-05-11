@@ -21,8 +21,6 @@ import PlaybackWatcher from './playback-watcher';
 import reloadSourceOnError from './reload-source-on-error';
 import * as loadBalancer from './load-balancing';
 
-loadBalancer.preRun();
-
 const Hls = {
   PlaylistLoader,
   Playlist,
@@ -32,6 +30,8 @@ const Hls = {
   utils,
   xhr: xhrFactory()
 };
+
+loadBalancer.preRun(Hls);
 
 Object.defineProperty(Hls, 'GOAL_BUFFER_LENGTH', {
   get() {
