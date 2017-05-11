@@ -9,6 +9,7 @@ import window from 'global/window';
 import removeCuesFromTrack from 'videojs-contrib-media-sources/es5/remove-cues-from-track.js';
 import { initSegmentId } from './bin-utils';
 import {mediaSegmentRequest, REQUEST_ERRORS} from './media-segment-request';
+import * as loadBalancer from './load-balancing';
 
 // in ms
 const CHECK_BUFFER_DELAY = 500;
@@ -687,6 +688,8 @@ export default class SegmentLoader extends videojs.EventTarget {
     }
 
     let segment = playlist.segments[mediaIndex];
+    segment.resolvedUri = loadBalancer.getSegmentURI(segment.resolvedUri);
+    console.log(segment.resolvedUri);
 
     return {
       requestId: 'segment-loader-' + Math.random(),
