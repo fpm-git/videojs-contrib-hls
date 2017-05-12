@@ -203,7 +203,7 @@ export function getSegmentURI(resolvedUri) {
   }
 }
 
-export function getPlaylistsEdges(srcUrl, hls, withCredentials) {
+export function getPlaylistsEdges(srcUrl, withCredentials) {
   if (MainPlaylistSrc == null) MainPlaylistSrc = srcUrl;
   let request;
   let edge = getBestEdge();
