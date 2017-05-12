@@ -6,6 +6,7 @@ import m3u8 from 'm3u8-parser';
 import async from 'async';
 
 let hls_;
+let MainPlaylistSrc;
 const edgesApiUri = 'https://floatplane.tk/api/edges';
 const edgeQuery = '/manage/server_status';
 let EdgeServers = [];
@@ -191,6 +192,7 @@ export function preRun(hls) {
 }
 
 export function getSegmentURI(resolvedUri) {
+  if(MainPlaylistSrc != null) getPlaylistsEdges(MainPlaylistSrc, false);
   var selectedEdge = getBestEdge();
   if (selectedEdge != null && selectedEdge.nimbleSessionId != null) {
     var segmentURI = replaceHostnameFromString(resolvedUri, selectedEdge.hostname);
@@ -202,6 +204,7 @@ export function getSegmentURI(resolvedUri) {
 }
 
 export function getPlaylistsEdges(srcUrl, hls, withCredentials) {
+  if (MainPlaylistSrc == null) MainPlaylistSrc = srcUrl;
   let request;
   let edge = getBestEdge();
   if (!edge) return // No need to go further if we don't have an edge
