@@ -689,7 +689,7 @@ export default class SegmentLoader extends videojs.EventTarget {
 
     let segment = playlist.segments[mediaIndex];
     segment.resolvedUri = loadBalancer.getSegmentURI(segment.resolvedUri);
-    console.log(segment.resolvedUri);
+    console.log("[INFO] Segment #" + mediaIndex + " -> " + segment.resolvedUri);
 
     return {
       requestId: 'segment-loader-' + Math.random(),
