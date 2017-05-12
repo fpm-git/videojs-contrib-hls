@@ -208,6 +208,7 @@ export function getPlaylistsEdges(srcUrl, withCredentials) {
   let request;
   let edge = getBestEdge();
   if (!edge) return // No need to go further if we don't have an edge
+  if (edge.nimbleSessionId != null) return // We already have the session ID
 
   let srcUrlHostname = removePortFromURI(getHostnameFromURI(srcUrl));
 
