@@ -185,6 +185,7 @@ const getLatencyEdge = function(edge, cb) {
     return cb(err);
   }
 }
+
 // Pre-run flow to ping all edges and chose the best one
 export function preRun(hls) {
   hls_ = hls;
