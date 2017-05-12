@@ -198,10 +198,17 @@ export function preRun(hls) {
          EdgeServers = JSON.parse(this.responseText);
 
          async.each(EdgeServers, function(edge, cb) {
-            var start = new Date().getTime();
-            Get(getEdgeQueryURI(edge));
-            edge.latency = (new Date().getTime() - start);
-            cb();
+            getLatencyEdge(edge, function(err) {
+              if (err) {
+                console.log(err);
+                return cb();
+              }
+
+              // Execute another time to bypass the SSL Initialize from the first request
+              getLatencyEdge(edge, function(err) {
+                return cb();
+              })
+            });
          }, function(err) {
            console.log(EdgeServers);
          });
