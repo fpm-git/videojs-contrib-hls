@@ -153,7 +153,7 @@ const getBestEdge = function() {
  *
  * @returns {string} String from HTTP reply
  */
-const Get = function(url){
+const Get = function(url) {
   var Httpreq = new XMLHttpRequest(); // a new request
   Httpreq.open("GET",url,false);
   Httpreq.send(null);
