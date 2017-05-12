@@ -161,6 +161,30 @@ const Get = function(url) {
   return Httpreq.responseText;
 }
 
+const getLatencyEdge = function(edge, cb) {
+  var start;
+  var request = new XMLHttpRequest();
+  request.timeout = 5000;
+
+  try {
+    request.onreadystatechange = function() {
+      if (this.readyState == 4 && (this.status == 200 || this.status == 404)) {
+        edge.latency = (new Date().getTime() - start);
+        return cb();
+      }
+      else if (this.readyState == 4) {
+        return cb({status: this.status, message: this.statusText});
+      }
+    }
+
+    request.open("GET", getEdgeQueryURI(edge), true);
+    start = new Date().getTime();
+    request.send();
+  }
+  catch(err) {
+    return cb(err);
+  }
+}
 // Pre-run flow to ping all edges and chose the best one
 export function preRun(hls) {
   hls_ = hls;
