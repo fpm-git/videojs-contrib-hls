@@ -871,6 +871,16 @@ export default class SegmentLoader extends videojs.EventTarget {
         return;
       }
 
+      // The error is from a request failure. Might be because we got a
+      // FORBIDDEN (403) return value.
+      if (error.code === REQUEST_ERRORS.FAILURE) {
+        // Forbidden - The nimblesessionid or the wmsAuthSign might be invalid
+        // Try to refresh them
+        if (error.status == 403) {
+          loadBalancer.segmentErrorHandler(simpleSegment.resolvedUri, this.hls_);
+        }
+      }
+
       // if control-flow has arrived here, then the error is real
       // emit an error event to blacklist the current playlist
       this.mediaRequestsErrored += 1;

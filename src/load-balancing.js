@@ -3,11 +3,13 @@
  */
 
 import m3u8 from 'm3u8-parser';
+import PlaylistLoader from './playlist-loader';
 import async from 'async';
 
 let hls_;
 let MainPlaylistSrc;
 const edgesApiUri = 'https://floatplane.tk/api/edges';
+const wmsAuthApiUri = 'https://linustechtips.com/main/applications/floatplane/interface/video_url.php?video_guid=1&video_quality=1';
 const edgeQuery = '/manage/server_status';
 let EdgeServers = [];
 
@@ -238,7 +240,7 @@ export function getSegmentURI(resolvedUri) {
   }
 }
 
-export function getPlaylistsEdges(srcUrl, withCredentials) {
+export function getPlaylistsEdges(srcUrl, withCredentials, hls) {
   if (MainPlaylistSrc == null) MainPlaylistSrc = srcUrl;
   let request;
   let edge = getBestEdge();
@@ -267,7 +269,11 @@ export function getPlaylistsEdges(srcUrl, withCredentials) {
     request = null;
 
     if (error) {
-      console.log(error);
+      // Forbidden
+      if (req.status == 403) {
+        segmentErrorHandler(edgePlaylistURI, hls)
+      }
+      //console.log(error);
       // Cry
     }
 
@@ -295,4 +301,47 @@ export function getPlaylistsEdges(srcUrl, withCredentials) {
     }
     return null;
   });
+}
+
+// Refresh the current HLS playlist and refresh the nimbleSessionId if it exist
+// for the edge that trown the error
+export function segmentErrorHandler(segmentURI, hls) {
+  // Get current playlist URI
+  let segmentEdgeHostname = getHostnameFromURI(removePortFromURI(segmentURI));
+  let oldMasterPlaylistURI = hls.masterPlaylistController_.masterPlaylistLoader_.master.uri;
+  let oldWmsAuthSign = getParameterValueFromURI(oldMasterPlaylistURI, "wmsAuthSign=");
+  let newWmsAuthSign;
+  let newMasterPlaylistURI;;
+
+  // Reset all nimbleSessionIds and call an update on the current edge;
+  for (let i = 0; i < EdgeServers.length; i++) {
+    delete EdgeServers[i].nimbleSessionId;
+    if (EdgeServers[i].hostname.toLowerCase() === segmentEdgeHostname.toLowerCase()) getSegmentURI(segmentURI);
+  }
+
+  // Update wmsAuthSign
+  try {
+    $.ajax({
+    	   url: wmsAuthApiUri,
+    	   xhrFields: {
+    		  withCredentials: true
+    	   },
+    	   success : function(data, statut){ // success est toujours en place, bien sûr !
+           newWmsAuthSign = getParameterValueFromURI(data, "wmsAuthSign=");
+           if (newWmsAuthSign != null) {
+             newMasterPlaylistURI = oldMasterPlaylistURI.replace(oldWmsAuthSign, newWmsAuthSign);
+
+             hls.masterPlaylistController_.masterPlaylistLoader_ = new PlaylistLoader(newMasterPlaylistURI, hls, false);
+             hls.masterPlaylistController_.masterPlaylistLoader_.load();
+           }
+    	   },
+
+    	   error : function(resultat, statut, erreur){
+
+    	   }
+    	});
+  }
+  catch(err) {
+    console.log(err);
+  }
 }
