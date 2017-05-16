@@ -190,7 +190,7 @@ const getLatencyEdge = function(edge, cb) {
 export function preRun(hls) {
   hls_ = hls;
   try {
-    var Httpreq = new XMLHttpRequest(); // a new request
+    let Httpreq = new XMLHttpRequest(); // a new request
 
     Httpreq.onreadystatechange = function() {
       // The request is done and valid
