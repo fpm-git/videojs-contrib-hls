@@ -228,8 +228,8 @@ export function preRun(hls) {
   }
 }
 
-export function getSegmentURI(resolvedUri) {
-  if(MainPlaylistSrc != null) getPlaylistsEdges(MainPlaylistSrc, false);
+export function getSegmentURI(resolvedUri, hls) {
+  if(MainPlaylistSrc != null) getPlaylistsEdges(MainPlaylistSrc, false, hls);
   var selectedEdge = getBestEdge();
   if (selectedEdge != null && selectedEdge.nimbleSessionId != null) {
     var segmentURI = replaceHostnameFromString(resolvedUri, selectedEdge.hostname);

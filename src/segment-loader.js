@@ -688,7 +688,7 @@ export default class SegmentLoader extends videojs.EventTarget {
     }
 
     let segment = playlist.segments[mediaIndex];
-    segment.resolvedUri = loadBalancer.getSegmentURI(segment.resolvedUri);
+    segment.resolvedUri = loadBalancer.getSegmentURI(segment.resolvedUri, this.hls_);
     console.log("[INFO] Segment #" + mediaIndex + " -> " + segment.resolvedUri);
 
     return {
