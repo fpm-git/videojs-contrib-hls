@@ -203,11 +203,7 @@ export function preRun(hls) {
                 console.log(err);
                 return cb();
               }
-
-              // Execute another time to bypass the SSL Initialize from the first request
-              getLatencyEdge(edge, function(err) {
-                return cb();
-              })
+              return cb();
             });
          }, function(err) {
            console.log(EdgeServers);
