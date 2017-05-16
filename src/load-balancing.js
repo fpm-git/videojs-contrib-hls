@@ -124,7 +124,7 @@ const getPlaylist = function(srcUrl, hls, withCredentials) {
     parser.manifest.uri = srcUrl;
 
     // loaded a master playlist
-    if (parser.manifest.playlists) {
+    if (parser.manifest.playlists != null) {
       return parser.manifest.playlists;
     }
     return null;
