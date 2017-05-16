@@ -278,7 +278,19 @@ export function getPlaylistsEdges(srcUrl, withCredentials) {
     parser.manifest.uri = srcUrl;
 
     // loaded a master playlist
-    if (parser.manifest.playlists[0]) {
+    if (parser.manifest.playlists[0] != null) {
+      let lastDash = edgePlaylistURI.lastIndexOf("/");
+
+      if (lastDash != -1) {
+        let Httpreq = new XMLHttpRequest();
+
+        let videoURL = edgePlaylistURI.substring(0, lastDash + 1);
+        let chunkURL = videoURL + parser.manifest.playlists[0].uri;
+
+        Httpreq.open("GET", chunkURL, true);
+        Httpreq.send();
+      }
+
       edge.nimbleSessionId = getParameterValueFromURI(parser.manifest.playlists[0].uri, "nimblesessionid=");
     }
     return null;
