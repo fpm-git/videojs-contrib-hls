@@ -168,7 +168,7 @@ const getLatencyEdge = function(edge, cb) {
 
   try {
     request.onreadystatechange = function() {
-      if (this.readyState == 4 && (this.status == 200 || this.status == 404)) {
+      if (this.readyState == 4 && (this.status == 200 || this.status == 403 || this.status == 404)) {
         edge.latency = (new Date().getTime() - start);
         return cb();
       }
