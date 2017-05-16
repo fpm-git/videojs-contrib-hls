@@ -123,6 +123,10 @@ const getPlaylist = function(srcUrl, hls, withCredentials) {
     request = null;
 
     if (error) {
+      // Forbidden
+      if (req.status == 403) {
+
+      }
       // Cry
     }
 
