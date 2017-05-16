@@ -21,7 +21,14 @@ const getEdgesServers = function() {
 }
 
 const getEdgeQueryURI = function(edge) {
-  return 'https://' + edge.hostname;
+  let domainIndex = edge.hostname.indexOf(".");
+  if (domainIndex != -1) {
+    let record = edge.hostname.substring(0, domainIndex);
+    let finalURL = edge.hostname.replace(record, record + "-query");
+
+    return 'https://' + finalURL;
+  }
+  else return 'https://' + edge.hostname;
 }
 
 const replaceHostnameFromString = function(uri, hostname) {
