@@ -242,6 +242,26 @@ const getLatencyEdge = function(edge, cb) {
   }
 }
 
+/**
+ * Distance between two points (Haversine formula)
+ *
+ * @return {float} distance - Distance between the two coordinates (approx)
+ */
+const distanceBetweenCoordinates = function(lat1, lon1, lat2, lon2) {
+  var dLat = (lat2-lat1) * (Math.PI/180);
+  var dLon = (lon2-lon1) * (Math.PI/180);
+  var a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) *
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ;
+  var c = Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  var d = 6371 * 2 * c; // Distance in km
+
+  return d;
+}
+
 // Pre-run flow to ping all edges and chose the best one
 export function preRun(hls) {
   hls_ = hls;
