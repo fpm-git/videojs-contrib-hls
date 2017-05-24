@@ -174,6 +174,28 @@ const Get = function(url) {
   return Httpreq.responseText;
 }
 
+const GetAsync = function(url, cb) {
+  try {
+    let Httpreq = new XMLHttpRequest(); // a new request
+
+    Httpreq.onreadystatechange = function() {
+      // The request is done and valid
+      if (this.readyState == 4 && this.status == 200) {
+        return cb(null, this.responseText)
+      }
+      else if (this.readyState == 4) {
+        return cb({returnCode: this.status});
+      }
+    };
+
+    Httpreq.open("GET", url, true);
+    Httpreq.send();
+  }
+  catch(err) {
+    return cb(err);
+  }
+}
+
 const getLatencyEdge = function(edge, cb) {
   var start;
   var request = new XMLHttpRequest();
