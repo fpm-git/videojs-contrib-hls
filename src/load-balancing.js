@@ -179,8 +179,43 @@ const getBestEdge = function() {
       }
       if (selectedEdge.latency > EdgeServers[i].latency) selectedEdge = EdgeServers[i];
     }
+/**
+ * Find the best edge by ping
+ *
+ * @returns {Object} edge - Edge object
+ */
+const getBestPingEdge = function() {
+  if (EdgeServers.length == 0) return null; // Empty array
+  let sortedEdgeList = sortEdgeListbyPing(EdgeServers);
+  return sortedEdgeList[0];
+}
+
+const sortEdgeListbyGeo = function(edges) {
+  let sortedList = edges.slice(0); // Clone array
+
+  let sortFn = function(e1, e2) {
+    if(e1.clientDistance == null && e2.clientDistance == null) return 0;
+    if(e1.clientDistance == null) return 100000;
+    if(e2.clientDistance == null) return -100000;
+
+    return e1.clientDistance - e2.clientDistance;
   }
-  return selectedEdge;
+
+  return sortedList.sort(sortFn);
+}
+
+const sortEdgeListbyPing = function(edges) {
+  let sortedList = edges.slice(0); // Clone array
+  //let sortedList = edges; // Reference for tests
+
+  let sortFn = function(e1, e2) {
+    if(e1.latency == null && e2.latency == null) return 0;
+    if(e1.latency == null) return 100000;
+    if(e2.latency == null) return -100000;
+    return e1.latency - e2.latency;
+  }
+
+  return sortedList.sort(sortFn);
 }
 
 /**
