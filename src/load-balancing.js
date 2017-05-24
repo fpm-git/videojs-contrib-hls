@@ -16,11 +16,31 @@ let ClientInfo = null;
 
 /**
  * Retrieve Edges from API
+ * EdgeServers & ClientInfo get populated directly by this function if there's no error
+ * Comment : The check for the edges property is for compatibility with an old API version, can remove when the new API is fully in prod.
  *
- * @returns {Array} Array of Edges Object
+ * @param {getEdgeServersCallback} cb
+ * @returns null (Callback)
  */
-const getEdgesServers = function() {
-  return JSON.parse(Get(edgesApiUri));
+const getEdgesServers = function(cb) {
+  GetAsync(edgesApiUri, function(err, result) {
+    if (err) return cb(err);
+
+    let tempObj = JSON.parse(result);
+
+    if ('edges' in tempObj) {
+      if ('client' in tempObj) {
+        ClientInfo = tempObj.client;
+      }
+
+      EdgeServers = tempObj.edges;
+      return cb();
+    }
+    else {
+      EdgeServers = tempObj;
+      return cb();
+    }
+  });
 }
 
 const getEdgeQueryURI = function(edge) {
