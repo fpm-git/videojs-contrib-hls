@@ -246,29 +246,20 @@ const getLatencyEdge = function(edge, cb) {
 export function preRun(hls) {
   hls_ = hls;
   try {
-    let Httpreq = new XMLHttpRequest(); // a new request
+    getEdgesServers(function(err) {
+      async.each(EdgeServers, function(edge, cb) {
+         getLatencyEdge(edge, function(err) {
+           if (err) console.log(err);
 
-    Httpreq.onreadystatechange = function() {
-      // The request is done and valid
-      if (this.readyState == 4 && this.status == 200) {
-         EdgeServers = JSON.parse(this.responseText);
-
-         async.each(EdgeServers, function(edge, cb) {
-            getLatencyEdge(edge, function(err) {
-              if (err) {
-                console.log(err);
-                return cb();
-              }
-              return cb();
-            });
-         }, function(err) {
-           console.log(EdgeServers);
+           getDistanceEdge(edge, function(err) {
+             if (err) console.log(err);
+             return cb();
+           });
          });
-      }
-    };
-
-    Httpreq.open("GET", edgesApiUri, true);
-    Httpreq.send();
+      }, function(err) {
+        console.log(EdgeServers);
+      });
+    });
   }
   catch(err) {
     console.log(err);
