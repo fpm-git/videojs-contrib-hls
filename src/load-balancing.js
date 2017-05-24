@@ -242,6 +242,16 @@ const getLatencyEdge = function(edge, cb) {
   }
 }
 
+const getDistanceEdge = function(edge, cb) {
+  if (ClientInfo == null) return cb(); // Currently don't have the client info object
+  if (ClientInfo.latitude == null || ClientInfo.longitude == null) return cb(); // Cannot proceed without client coordinates
+
+  if (edge.datacenter == null || edge.datacenter.latitude == null || edge.datacenter.longitude == null) return cb(); // Cannot proceed without edge coordinates
+
+  edge.clientDistance = distanceBetweenCoordinates(edge.datacenter.latitude, edge.datacenter.longitude, ClientInfo.latitude, ClientInfo.longitude);
+  return cb();
+}
+
 /**
  * Distance between two points (Haversine formula)
  *
