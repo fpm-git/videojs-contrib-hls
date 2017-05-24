@@ -171,14 +171,12 @@ const getPlaylist = function(srcUrl, hls, withCredentials) {
  * @returns {Object} Edge, or null if none
  */
 const getBestEdge = function() {
-  var selectedEdge = null;
-  for (var i = 0; i < EdgeServers.length; i++) {
-    if (EdgeServers[i].latency != null) {
-      if (selectedEdge == null) {
-        selectedEdge = EdgeServers[i];
-      }
-      if (selectedEdge.latency > EdgeServers[i].latency) selectedEdge = EdgeServers[i];
-    }
+  let sortedGeoEdge = sortEdgeListbyGeo(EdgeServers);
+  console.log("Geo Sorted");
+  console.log(sortedGeoEdge);
+  return getBestPingEdge();
+}
+
 /**
  * Find the best edge by ping
  *
