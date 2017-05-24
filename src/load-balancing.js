@@ -12,6 +12,7 @@ const edgesApiUri = 'https://floatplane.tk/api/edges';
 const wmsAuthApiUri = 'https://linustechtips.com/main/applications/floatplane/interface/video_url.php?video_guid=1&video_quality=1';
 const edgeQuery = '/manage/server_status';
 let EdgeServers = [];
+let ClientInfo = null;
 
 /**
  * Retrieve Edges from API
