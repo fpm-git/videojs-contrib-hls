@@ -171,17 +171,30 @@ const getPlaylist = function(srcUrl, hls, withCredentials) {
  * @returns {Object} Edge, or null if none
  */
 const getBestEdge = function() {
+  // Need to check if there's multiple servers in the same DC
+  // Else, everyone close will always connect to the first closest server
+  // in the array, without caring about the latency (which should reflect the server load)
+  let getBestDCPingEdge = function(sortedGeoEdge) {
+    let sameDCArray = [sortedGeoEdge[0]];
+    for (let i = 1; i < sortedGeoEdge.length; i++) {
+      if (sortedGeoEdge[0].clientDistance == sortedGeoEdge[i].clientDistance) sameDCArray.push(sortedGeoEdge[i]);
+      else break;
+    }
+
+    return sortEdgeListbyPing(sameDCArray)[0];
+  }
+
   let sortedGeoEdge = sortEdgeListbyGeo(EdgeServers);
   sortedGeoEdge = removeDeadEdgeFromList(sortedGeoEdge);
   if (sortedGeoEdge.length > 0 && ClientInfo != null) {
     let closestEdge = sortedGeoEdge[0];
     if ('clientDistance' in closestEdge)
-      if (closestEdge.clientDistance <= 1700) return closestEdge;
+      if (closestEdge.clientDistance <= 1700) return getBestDCPingEdge(sortedGeoEdge);
 
     if ('country_code' in ClientInfo)
       if ('datacenter' in closestEdge)
         if ('countryCode' in closestEdge.datacenter)
-          if (ClientInfo.country_code === closestEdge.datacenter.countryCode) return closestEdge;
+          if (ClientInfo.country_code === closestEdge.datacenter.countryCode) return getBestDCPingEdge(sortedGeoEdge);
   }
 
   console.log("--- Geo Sorted List ---");
