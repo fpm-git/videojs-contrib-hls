@@ -172,8 +172,21 @@ const getPlaylist = function(srcUrl, hls, withCredentials) {
  */
 const getBestEdge = function() {
   let sortedGeoEdge = sortEdgeListbyGeo(EdgeServers);
-  console.log("Geo Sorted");
+  sortedGeoEdge = removeDeadEdgeFromList(sortedGeoEdge);
+  if (sortedGeoEdge.length > 0 && ClientInfo != null) {
+    let closestEdge = sortedGeoEdge[0];
+    if ('clientDistance' in closestEdge)
+      if (closestEdge.clientDistance <= 1700) return closestEdge;
+
+    if ('country_code' in ClientInfo)
+      if ('datacenter' in closestEdge)
+        if ('countryCode' in closestEdge.datacenter)
+          if (ClientInfo.country_code === closestEdge.datacenter.countryCode) return closestEdge;
+  }
+
+  console.log("--- Geo Sorted List ---");
   console.log(sortedGeoEdge);
+
   return getBestPingEdge();
 }
 
