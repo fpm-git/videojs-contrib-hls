@@ -196,8 +196,9 @@ const removeDeadEdgeFromList = function(edges) {
  * @returns {Object} edge - Edge object
  */
 const getBestPingEdge = function() {
-  if (EdgeServers.length == 0) return null; // Empty array
   let sortedEdgeList = sortEdgeListbyPing(EdgeServers);
+  sortedEdgeList = removeDeadEdgeFromList(sortedEdgeList);
+  if (sortedEdgeList.length == 0) return null; // Empty array
   return sortedEdgeList[0];
 }
 
