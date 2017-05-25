@@ -178,6 +178,19 @@ const getBestEdge = function() {
 }
 
 /**
+ * Remove the edges that don't have the latency field
+ * Comment: USE ONLY WITH CLONES
+ * TODO:?
+ */
+const removeDeadEdgeFromList = function(edges) {
+  for(var i = edges.length - 1; i >= 0; i--) {
+    if(edges[i].latency == null) {
+        edges.splice(i, 1);
+    }
+  }
+}
+
+/**
  * Find the best edge by ping
  *
  * @returns {Object} edge - Edge object
