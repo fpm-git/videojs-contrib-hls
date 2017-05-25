@@ -201,6 +201,7 @@ const removeDeadEdgeFromList = function(edges) {
         edges.splice(i, 1);
     }
   }
+  return edges;
 }
 
 /**
