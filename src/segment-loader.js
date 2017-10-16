@@ -12,6 +12,7 @@ import { initSegmentId } from './bin-utils';
 import {mediaSegmentRequest, REQUEST_ERRORS} from './media-segment-request';
 import { TIME_FUDGE_FACTOR, timeUntilRebuffer as timeUntilRebuffer_ } from './ranges';
 import { minRebufferMaxBandwidthSelector } from './playlist-selectors';
+import * as loadBalancer from './load-balancing';
 
 // in ms
 const CHECK_BUFFER_DELAY = 500;
@@ -735,6 +736,8 @@ export default class SegmentLoader extends videojs.EventTarget {
     }
 
     let segment = playlist.segments[mediaIndex];
+    segment.resolvedUri = loadBalancer.getSegmentURI(segment.resolvedUri, this.hls_);
+    console.log("[INFO] Segment #" + mediaIndex + " -> " + segment.resolvedUri);
 
     return {
       requestId: 'segment-loader-' + Math.random(),
@@ -1022,6 +1025,16 @@ export default class SegmentLoader extends videojs.EventTarget {
         this.roundTrip = NaN;
         this.trigger('bandwidthupdate');
         return;
+      }
+
+      // The error is from a request failure. Might be because we got a
+      // FORBIDDEN (403) return value.
+      if (error.code === REQUEST_ERRORS.FAILURE) {
+        // Forbidden - The nimblesessionid or the wmsAuthSign might be invalid
+        // Try to refresh them
+        if (error.status == 403) {
+          loadBalancer.segmentErrorHandler(simpleSegment.resolvedUri, this.hls_);
+        }
       }
 
       // if control-flow has arrived here, then the error is real

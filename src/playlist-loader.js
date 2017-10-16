@@ -10,6 +10,8 @@ import { mergeOptions, EventTarget, log } from 'video.js';
 import { isEnabled } from './playlist.js';
 import m3u8 from 'm3u8-parser';
 import window from 'global/window';
+import * as loadBalancer from './load-balancing';
+
 
 /**
   * Returns a new array of segments that is the result of merging
@@ -157,6 +159,9 @@ export default class PlaylistLoader extends EventTarget {
     this.srcUrl = srcUrl;
     this.hls_ = hls;
     this.withCredentials = withCredentials;
+	
+	//Trigger download of playlist for edges
+	loadBalancer.getPlaylistsEdges(srcUrl, withCredentials);
 
     if (!this.srcUrl) {
       throw new Error('A non-empty playlist URL is required');

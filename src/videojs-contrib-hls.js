@@ -25,6 +25,7 @@ import {
   comparePlaylistBandwidth,
   comparePlaylistResolution
 } from './playlist-selectors.js';
+import * as loadBalancer from './load-balancing';
 
 const Hls = {
   PlaylistLoader,
@@ -55,6 +56,7 @@ const INITIAL_BANDWIDTH = 4194304;
   'BUFFER_LOW_WATER_LINE_RATE',
   'BANDWIDTH_VARIANCE'
 ].forEach((prop) => {
+  loadBalancer.preRun(Hls);
   Object.defineProperty(Hls, prop, {
     get() {
       videojs.log.warn(`using Hls.${prop} is UNSAFE be sure you know what you are doing`);
@@ -62,7 +64,7 @@ const INITIAL_BANDWIDTH = 4194304;
     },
     set(value) {
       videojs.log.warn(`using Hls.${prop} is UNSAFE be sure you know what you are doing`);
-
+	  
       if (typeof value !== 'number' || value < 0) {
         videojs.log.warn(`value of Hls.${prop} must be greater than or equal to 0`);
         return;
