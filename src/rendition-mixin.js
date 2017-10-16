@@ -30,8 +30,12 @@ const enableFunction = (loader, playlistUri, changePlaylistFn, enable) => {
   if (enable !== currentlyEnabled && !blacklisted) {
     // Ensure the outside world knows about our changes
     changePlaylistFn();
+    if (enable) {
+      loader.trigger('renditionenabled');
+    } else {
+      loader.trigger('renditiondisabled');
+    }
   }
-
   return enable;
 };
 
@@ -50,20 +54,15 @@ class Representation {
                               .fastQualityChange_
                               .bind(hlsHandler.masterPlaylistController_);
 
-    // Carefully descend into the playlist's attributes since most
-    // properties are optional
-    if (playlist.attributes) {
-      let attributes = playlist.attributes;
+    // some playlist attributes are optional
+    if (playlist.attributes.RESOLUTION) {
+      const resolution = playlist.attributes.RESOLUTION;
 
-      if (attributes.RESOLUTION) {
-        let resolution = attributes.RESOLUTION;
-
-        this.width = resolution.width;
-        this.height = resolution.height;
-      }
-
-      this.bandwidth = attributes.BANDWIDTH;
+      this.width = resolution.width;
+      this.height = resolution.height;
     }
+
+    this.bandwidth = playlist.attributes.BANDWIDTH;
 
     // The id is simply the ordinality of the media playlist
     // within the master playlist

@@ -8,6 +8,7 @@
  * my life and honor to the Playback Watch, for this Player and all the Players to come.
  */
 
+import window from 'global/window';
 import Ranges from './ranges';
 import videojs from 'video.js';
 
@@ -43,14 +44,15 @@ export default class PlaybackWatcher {
     }
     this.logger_('initialize');
 
-    let waitingHandler = () => this.waiting_();
+    let canPlayHandler = () => this.monitorCurrentTime_();
+    let waitingHandler = () => this.techWaiting_();
     let cancelTimerHandler = () => this.cancelTimer_();
     let fixesBadSeeksHandler = () => this.fixesBadSeeks_();
 
     this.tech_.on('seekablechanged', fixesBadSeeksHandler);
     this.tech_.on('waiting', waitingHandler);
     this.tech_.on(timerCancelEvents, cancelTimerHandler);
-    this.monitorCurrentTime_();
+    this.tech_.on('canplay', canPlayHandler);
 
     // Define the dispose function to clean up our events
     this.dispose = () => {
@@ -58,8 +60,9 @@ export default class PlaybackWatcher {
       this.tech_.off('seekablechanged', fixesBadSeeksHandler);
       this.tech_.off('waiting', waitingHandler);
       this.tech_.off(timerCancelEvents, cancelTimerHandler);
+      this.tech_.off('canplay', canPlayHandler);
       if (this.checkCurrentTimeTimeout_) {
-        clearTimeout(this.checkCurrentTimeTimeout_);
+        window.clearTimeout(this.checkCurrentTimeTimeout_);
       }
       this.cancelTimer_();
     };
@@ -74,11 +77,12 @@ export default class PlaybackWatcher {
     this.checkCurrentTime_();
 
     if (this.checkCurrentTimeTimeout_) {
-      clearTimeout(this.checkCurrentTimeTimeout_);
+      window.clearTimeout(this.checkCurrentTimeTimeout_);
     }
 
     // 42 = 24 fps // 250 is what Webkit uses // FF uses 15
-    this.checkCurrentTimeTimeout_ = setTimeout(this.monitorCurrentTime_.bind(this), 250);
+    this.checkCurrentTimeTimeout_ =
+      window.setTimeout(this.monitorCurrentTime_.bind(this), 250);
   }
 
   /**
@@ -100,6 +104,19 @@ export default class PlaybackWatcher {
     }
 
     let currentTime = this.tech_.currentTime();
+    let buffered = this.tech_.buffered();
+
+    if (this.lastRecordedTime === currentTime &&
+        (!buffered.length || currentTime + 0.1 >= buffered.end(buffered.length - 1))) {
+      // If current time is at the end of the final buffered region, then any playback
+      // stall is most likely caused by buffering in a low bandwidth environment. The tech
+      // should fire a `waiting` event in this scenario, but due to browser and tech
+      // inconsistencies (e.g. The Flash tech does not fire a `waiting` event when the end
+      // of the buffer is reached and has fallen off the live window). Calling
+      // `techWaiting_` here allows us to simulate responding to a native `waiting` event
+      // when the tech fails to emit one.
+      return this.techWaiting_();
+    }
 
     if (this.consecutiveUpdates >= 5 &&
         currentTime === this.lastRecordedTime) {
@@ -137,18 +154,32 @@ export default class PlaybackWatcher {
    * @private
    */
   fixesBadSeeks_() {
-    let seekable = this.seekable();
-    let currentTime = this.tech_.currentTime();
+    const seeking = this.tech_.seeking();
+    const seekable = this.seekable();
+    const currentTime = this.tech_.currentTime();
+    let seekTo;
 
-    if (this.tech_.seeking() &&
-        this.outsideOfSeekableWindow_(seekable, currentTime)) {
-      let seekableEnd = seekable.end(seekable.length - 1);
+    if (seeking && this.afterSeekableWindow_(seekable, currentTime)) {
+      const seekableEnd = seekable.end(seekable.length - 1);
 
       // sync to live point (if VOD, our seekable was updated and we're simply adjusting)
+      seekTo = seekableEnd;
+    }
+
+    if (seeking && this.beforeSeekableWindow_(seekable, currentTime)) {
+      const seekableStart = seekable.start(0);
+
+      // sync to the beginning of the live window
+      // provide a buffer of .1 seconds to handle rounding/imprecise numbers
+      seekTo = seekableStart + 0.1;
+    }
+
+    if (typeof seekTo !== 'undefined') {
       this.logger_(`Trying to seek outside of seekable at time ${currentTime} with ` +
-                   `seekable range ${Ranges.printableRange(seekable)}. Seeking to ` +
-                   `${seekableEnd}.`);
-      this.tech_.setCurrentTime(seekableEnd);
+                  `seekable range ${Ranges.printableRange(seekable)}. Seeking to ` +
+                  `${seekTo}.`);
+
+      this.tech_.setCurrentTime(seekTo);
       return true;
     }
 
@@ -156,23 +187,65 @@ export default class PlaybackWatcher {
   }
 
   /**
-   * Handler for situations when we determine the player is waiting
+   * Handler for situations when we determine the player is waiting.
    *
    * @private
    */
   waiting_() {
+    if (this.techWaiting_()) {
+      return;
+    }
+
+    // All tech waiting checks failed. Use last resort correction
+    let currentTime = this.tech_.currentTime();
+    let buffered = this.tech_.buffered();
+    let currentRange = Ranges.findRange(buffered, currentTime);
+
+    // Sometimes the player can stall for unknown reasons within a contiguous buffered
+    // region with no indication that anything is amiss (seen in Firefox). Seeking to
+    // currentTime is usually enough to kickstart the player. This checks that the player
+    // is currently within a buffered region before attempting a corrective seek.
+    // Chrome does not appear to continue `timeupdate` events after a `waiting` event
+    // until there is ~ 3 seconds of forward buffer available. PlaybackWatcher should also
+    // make sure there is ~3 seconds of forward buffer before taking any corrective action
+    // to avoid triggering an `unknownwaiting` event when the network is slow.
+    if (currentRange.length && currentTime + 3 <= currentRange.end(0)) {
+      this.cancelTimer_();
+      this.tech_.setCurrentTime(currentTime);
+
+      this.logger_(`Stopped at ${currentTime} while inside a buffered region ` +
+        `[${currentRange.start(0)} -> ${currentRange.end(0)}]. Attempting to resume ` +
+        `playback by seeking to the current time.`);
+
+      // unknown waiting corrections may be useful for monitoring QoS
+      this.tech_.trigger({type: 'usage', name: 'hls-unknown-waiting'});
+      return;
+    }
+  }
+
+  /**
+   * Handler for situations when the tech fires a `waiting` event
+   *
+   * @return {Boolean}
+   *         True if an action (or none) was needed to correct the waiting. False if no
+   *         checks passed
+   * @private
+   */
+  techWaiting_() {
     let seekable = this.seekable();
     let currentTime = this.tech_.currentTime();
 
     if (this.tech_.seeking() && this.fixesBadSeeks_()) {
-      return;
+      // Tech is seeking or bad seek fixed, no action needed
+      return true;
     }
 
     if (this.tech_.seeking() || this.timer_ !== null) {
-      return;
+      // Tech is seeking or already waiting on another action, no action needed
+      return true;
     }
 
-    if (this.fellOutOfLiveWindow_(seekable, currentTime)) {
+    if (this.beforeSeekableWindow_(seekable, currentTime)) {
       let livePoint = seekable.end(seekable.length - 1);
 
       this.logger_(`Fell out of live window at time ${currentTime}. Seeking to ` +
@@ -181,8 +254,8 @@ export default class PlaybackWatcher {
       this.tech_.setCurrentTime(livePoint);
 
       // live window resyncs may be useful for monitoring QoS
-      this.tech_.trigger('liveresync');
-      return;
+      this.tech_.trigger({type: 'usage', name: 'hls-live-resync'});
+      return true;
     }
 
     let buffered = this.tech_.buffered();
@@ -197,43 +270,48 @@ export default class PlaybackWatcher {
       this.tech_.setCurrentTime(currentTime);
 
       // video underflow may be useful for monitoring QoS
-      this.tech_.trigger('videounderflow');
-      return;
+      this.tech_.trigger({type: 'usage', name: 'hls-video-underflow'});
+      return true;
     }
 
     // check for gap
     if (nextRange.length > 0) {
       let difference = nextRange.start(0) - currentTime;
 
-      this.logger_(`Stopped at ${currentTime}, setting timer for ${difference}, seeking ` +
-                   `to ${nextRange.start(0)}`);
+      this.logger_(
+        `Stopped at ${currentTime}, setting timer for ${difference}, seeking ` +
+        `to ${nextRange.start(0)}`);
 
       this.timer_ = setTimeout(this.skipTheGap_.bind(this),
                                difference * 1000,
                                currentTime);
+      return true;
     }
+
+    // All checks failed. Returning false to indicate failure to correct waiting
+    return false;
   }
 
-  outsideOfSeekableWindow_(seekable, currentTime) {
+  afterSeekableWindow_(seekable, currentTime) {
     if (!seekable.length) {
       // we can't make a solid case if there's no seekable, default to false
       return false;
     }
 
     // provide a buffer of .1 seconds to handle rounding/imprecise numbers
-    if (currentTime < seekable.start(0) - 0.1 ||
-        currentTime > seekable.end(seekable.length - 1) + 0.1) {
+    if (currentTime > seekable.end(seekable.length - 1) + 0.1) {
       return true;
     }
 
     return false;
   }
 
-  fellOutOfLiveWindow_(seekable, currentTime) {
+  beforeSeekableWindow_(seekable, currentTime) {
     if (seekable.length &&
         // can't fall before 0 and 0 seekable start identifies VOD stream
         seekable.start(0) > 0 &&
-        currentTime < seekable.start(0)) {
+        // provide a buffer of .1 seconds to handle rounding/imprecise numbers
+        currentTime < seekable.start(0) - 0.1) {
       return true;
     }
 
@@ -282,6 +360,8 @@ export default class PlaybackWatcher {
 
     // only seek if we still have not played
     this.tech_.setCurrentTime(nextRange.start(0) + Ranges.TIME_FUDGE_FACTOR);
+
+    this.tech_.trigger({type: 'usage', name: 'hls-gap-skip'});
   }
 
   gapFromVideoUnderflow_(buffered, currentTime) {
